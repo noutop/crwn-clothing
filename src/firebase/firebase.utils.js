@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, writeBatch } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: "AIzaSyBk-vREur1IS2jXWVYNLploeDiH8w_Fbcw",
@@ -16,7 +16,11 @@ export const createUserProfile = async (userAuth, additionalData) => {
   if (!userAuth) return
 
   const userRef = doc(firestore, 'users', `${userAuth.uid}`)
+  // const collectionRef = collection(firestore, 'users')
+
   const docSnap = await getDoc(userRef)
+  // const collectionSnapshot = await getDocs(collectionRef)
+  // console.log({ collection: collectionSnapshot.docs.map(doc => doc.data()) })
 
   if (!docSnap.exists()) {
     const { displayName, email } = userAuth
@@ -35,6 +39,36 @@ export const createUserProfile = async (userAuth, additionalData) => {
   }
 
   return userRef
+}
+
+export const addCollectionsAndDocuments = async (collectionKey, objectsToAdd) => {
+  const collectionRef = collection(firestore, collectionKey)
+
+  const batch = writeBatch(firestore)
+
+  objectsToAdd.forEach(obj => {
+    const newDocRef = doc(collectionRef)
+    batch.set(newDocRef, obj)
+  })
+
+  return await batch.commit()
+}
+
+export const convertCollectionsSnapshotToMap = (collections) => {
+  const tranformedCollection = collections.docs.map(doc => {
+    const { title, items } = doc.data()
+
+    return {
+      routeName: encodeURI(title.toLowerCase()),
+      id: doc.id,
+      title,
+      items
+    }
+  })
+  return tranformedCollection.reduce((accumulator, collection) => {
+    accumulator[collection.title.toLowerCase()] = collection
+    return accumulator
+  }, {})
 }
 
 export const app = initializeApp(firebaseConfig)
