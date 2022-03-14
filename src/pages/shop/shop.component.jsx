@@ -4,7 +4,7 @@ import CollectionsOverview from '../../components/collections-overview/collectio
 import CollectionPage from '../collection/collection.component'
 import withSpinner from '../../components/with-spinner/with-spinner.component'
 import {firestore, convertCollectionsSnapshotToMap} from '../../firebase/firebase.utils'
-import { collection, onSnapshot } from 'firebase/firestore'
+import { collection, getDocs, onSnapshot } from 'firebase/firestore'
 import {connect} from 'react-redux'
 import { updateCollections } from '../../redux/shop/shop.actions'
 
@@ -23,11 +23,23 @@ class ShopPage extends React.Component {
     const {updateCollections} = this.props
     const collectionsRef = collection(firestore, 'collections')
 
-    this.unsubscribeFromSnapshot = onSnapshot(collectionsRef, async (snapshot) => {
-      const collectionsMap = convertCollectionsSnapshotToMap(snapshot)
-      updateCollections(collectionsMap)
-      this.setState({loading: false})
-    })
+    // THIS ALSO WORKS BUT IS 7 LEVELS NESTED -> CHANGING collectionsMap
+    // fetch('https://firestore.googleapis.com/v1/projects/crwn-db-95914/databases/(default)/documents/collections')
+    //   .then(response => response.json())
+    //   .then(collections => console.log(collections))
+
+    getDocs(collectionsRef)
+      .then(snapshot => {
+        const collectionsMap = convertCollectionsSnapshotToMap(snapshot)
+        updateCollections(collectionsMap)
+        this.setState({loading: false})
+      })
+
+    // this.unsubscribeFromSnapshot = onSnapshot(collectionsRef, async (snapshot) => {
+    //   const collectionsMap = convertCollectionsSnapshotToMap(snapshot)
+    //   updateCollections(collectionsMap)
+    //   this.setState({loading: false})
+    // })
   }
 
   render(){
